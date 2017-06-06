@@ -9,14 +9,14 @@ It is common to perform a one-time ingestion of data from an operational databas
 
 Use the following steps to incrementally update Hive tables from operational database systems:
 
-1.Ingest: Complete data movement from the operational database (base_table) followed by change or update of changed records only (incremental_table).
-2.Reconcile: Create a single view of the base table and change records (reconcile_view) to reflect the latest record set.
-3.Compact: Create a reporting table (reporting_table) from the reconciled view.
-4.Purge: Replace the base table with the reporting table contents and delete any previously processed change records before the next data ingestion cycle
+<br>1.Ingest: Complete data movement from the operational database (base_table) followed by change or update of changed records only (incremental_table).
+<br>2.Reconcile: Create a single view of the base table and change records (reconcile_view) to reflect the latest record set.
+<br>3.Compact: Create a reporting table (reporting_table) from the reconciled view.
+<br>4.Purge: Replace the base table with the reporting table contents and delete any previously processed change records before the next data ingestion cycle
 
 </p>
  
-**************************************************INGEST **********************************
+#### **INGEST **
 
 <br/>Step1: check the existing table in your DBMS database
 ```sql
@@ -45,18 +45,18 @@ sqoop import-all-tables \
     --hive-import \
     --map-column-hive last_modified=DATE
 ```
-<br/>RESULT ---------------
+<br/>RESULT ----
 
 authors.id|authors.name	|authors.email	|authors.last_modified
-----|-------------|------------------|--------------
-1|Vivek|	xuz@abc.com	|2017-04-22
-3|Rock	|pyz@abc.com	|2017-04-20
-2|Priya	|p@gmail.com	|2017-04-21
-3|Oriya	|o@gmail.com	|2017-04-22
-3|Tom	|tom@yahoo.com	|2017-04-20
-1|Rom	|rom@yahoo.com	|2017-04-22
-5|Tims	|tim@yahoo.com	|NULL
-1|Star	|som@yahoo.com	|NULL
+----|----------|------------------|--------------
+1|Vivek|xuz@abc.com	|2017-04-22
+3|Rock|pyz@abc.com	|2017-04-20
+2|Priya|p@gmail.com	|2017-04-21
+3|Oriya|o@gmail.com	|2017-04-22
+3|Tom|tom@yahoo.com	|2017-04-20
+1|Rom|rom@yahoo.com	|2017-04-22
+5|Tims|tim@yahoo.com	|NULL
+1|Star|som@yahoo.com	|NULL
 <br/>Time taken: 0.059 seconds, Fetched: 8 row(s)
 
 ------------------------ 
@@ -91,7 +91,7 @@ sqoop import --connect jdbc:mysql://localhost/training \
 </p>
 
 
-**************************************RECONCILE*************************************
+#### **RECONCILE**
 
 
 <p>
@@ -113,11 +113,13 @@ ON t1.id = t2.id AND t1.last_modified = t2.max_modified;
 ```
 
 <br/>RESULT ---------------
-<br/>reconcile_view.id	reconcile_view.name	reconcile_view.email	reconcile_view.last_modified
-<br/>1	Star	som@yahoo.com	2017-04-23
-<br/>2	Priya	p@gmail.com	2017-04-21
-<br/>3	Oriya	o@gmail.com	2017-04-22
-<br />5	Tims	tim@yahoo.com	2017-04-23
+
+reconcile_view.id|	reconcile_view.name|	reconcile_view.email|	reconcile_view.last_modified
+------------------|-------------------|---------------------|--------------------------
+1|	Star|	som@yahoo.com|	2017-04-23
+2|	Priya|	p@gmail.com|	2017-04-21
+3|	Oriya|	o@gmail.com|	2017-04-22
+5|	Tims|	tim@yahoo.com|	2017-04-23
 
 
 <br/>The following are result of individual sub-queries*******
@@ -127,18 +129,20 @@ SELECT * FROM authors
          UNION ALL
          SELECT * from incremental_table
  ```        
-<br/>Result----------------
-<br/>_u1.id	_u1.name	_u1.email	_u1.last_modified
-<br/>1	Vivek	xuz@abc.com	2017-04-22
-<br/>3	Rock	pyz@abc.com	2017-04-20
-<br/>2	Priya	p@gmail.com	2017-04-21
-<br/>3	Oriya	o@gmail.com	2017-04-22
-<br/>3	Tom	tom@yahoo.com	2017-04-20
-<br/>1	Rom	rom@yahoo.com	2017-04-22
-<br/>5	Tims	tim@yahoo.com	NULL
-<br/>1	Star	som@yahoo.com	NULL
-<br/>5	Tims	tim@yahoo.com	2017-04-23
-<br/>1	Star	som@yahoo.com	2017-04-23
+<br/>Result
+
+_u1|.id|	_u1.name|	_u1.email|	_u1.last_modified
+----|---|---------|---------|-------
+1|Vivek|	xuz@abc.com|	2017-04-22
+3|	Rock|	pyz@abc.com|	2017-04-20
+2|	Priya|	p@gmail.com|	2017-04-21
+3|	Oriya|	o@gmail.com|	2017-04-22
+3|	Tom|	tom@yahoo.com|	2017-04-20
+1|	Rom|	rom@yahoo.com|	2017-04-22
+5|	Tims|	tim@yahoo.com|	NULL
+1|	Star|	som@yahoo.com|	NULL
+5|	Tims|	tim@yahoo.com|	2017-04-23
+1|	Star|	som@yahoo.com|	2017-04-23
 <br/>Time taken: 14.215 seconds, Fetched: 10 row(s)
 
 <br/>second sub query*****
@@ -159,12 +163,9 @@ SELECT id, max(last_modified) max_modified FROM
 
 
 
-***************************************************COMPACT******************************
+#### **COMPACT**
 
 
-
-
-<p>
 <br />Step6: Compact the data
 
 <br/>The view changes as soon as new data is introduced into the incremental table in HDFS (/user/hive/incremental_table, so create and store a copy of the view as a snapshot in time
@@ -174,13 +175,8 @@ CREATE TABLE reporting_table AS
 SELECT * FROM reconcile_view;
 ```
 
-</p>
 
-
-
-***************************************************PURGE******************************
-
-
+#### **PURGE**
 
 <p>
 <br />Step7:Purge data: After you have created a reporting table, clean up the incremental updates to ensure that the same data is not read twice:
