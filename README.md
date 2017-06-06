@@ -4,19 +4,19 @@
 
 <b>Incrementally Updating a Hive Table Using Sqoop and an External Table</b>
 
-<p>
+
 It is common to perform a one-time ingestion of data from an operational database to Hive and then require incremental updates periodically. Currently, Hive does not support SQL Merge for bulk merges from operational systems. Instead, you must perform periodic updates as described in this section.
 
 Use the following steps to incrementally update Hive tables from operational database systems:
 
-<br>1.Ingest: Complete data movement from the operational database (base_table) followed by change or update of changed records only (incremental_table).
-<br>2.Reconcile: Create a single view of the base table and change records (reconcile_view) to reflect the latest record set.
-<br>3.Compact: Create a reporting table (reporting_table) from the reconciled view.
-<br>4.Purge: Replace the base table with the reporting table contents and delete any previously processed change records before the next data ingestion cycle
+<br>1.**Ingest**: Complete data movement from the operational database (base_table) followed by change or update of changed records only (incremental_table).
+<br>2.**Reconcile**: Create a single view of the base table and change records (reconcile_view) to reflect the latest record set.
+<br>3.**Compact**: Create a reporting table (reporting_table) from the reconciled view.
+<br>4.**Purge**: Replace the base table with the reporting table contents and delete any previously processed change records before the next data ingestion cycle
 
-</p>
+
  
-#### **INGEST **
+#### INGEST
 
 <br/>Step1: check the existing table in your DBMS database
 ```sql
@@ -45,7 +45,7 @@ sqoop import-all-tables \
     --hive-import \
     --map-column-hive last_modified=DATE
 ```
-<br/>RESULT ----
+<br/>RESULT 
 
 authors.id|authors.name	|authors.email	|authors.last_modified
 ----|----------|------------------|--------------
@@ -81,20 +81,21 @@ sqoop import --connect jdbc:mysql://localhost/training \
 <br  />1,Star,som@yahoo.com,2017-04-23
 
 <br/>Step4.
-<br/>store above data in a hive external table-------------
-<br/>CREATE EXTERNAL TABLE incremental_table 
-<br/>(id int, name string, email string, last_modified date)
-<br/>    ROW FORMAT DELIMITED
-<br/>    FIELDS TERMINATED BY ','
-<br/>    STORED AS TEXTFILE
-<br/>    location '/user/hive/incremental_table';
+<br/>store above data in a hive external table
+
+```sql
+CREATE EXTERNAL TABLE incremental_table 
+(id int, name string, email string, last_modified date)
+    ROW FORMAT DELIMITED
+    FIELDS TERMINATED BY ','
+    STORED AS TEXTFILE
+    location '/user/hive/incremental_table';
+```    
 </p>
 
 
 #### **RECONCILE**
 
-
-<p>
 <br/>Step5:Reconcile: Merge both tables to keep only the updated data
 
 ```sql
@@ -112,7 +113,7 @@ SELECT t1.* FROM
 ON t1.id = t2.id AND t1.last_modified = t2.max_modified;
 ```
 
-<br/>RESULT ---------------
+<br/>RESULT 
 
 reconcile_view.id|	reconcile_view.name|	reconcile_view.email|	reconcile_view.last_modified
 ------------------|-------------------|---------------------|--------------------------
@@ -145,21 +146,25 @@ _u1|.id|	_u1.name|	_u1.email|	_u1.last_modified
 1|	Star|	som@yahoo.com|	2017-04-23
 <br/>Time taken: 14.215 seconds, Fetched: 10 row(s)
 
-<br/>second sub query*****
+<br/>second sub query
+
 ```sql
 SELECT id, max(last_modified) max_modified FROM
         (SELECT * FROM authors
          UNION ALL
          SELECT * from incremental_table) tata
      GROUP BY id;
-```     
-<br/>Result-----------------------------------------
-<br/>id	max_modified
-<br/>1	2017-04-23
-<br/>2	2017-04-21
-<br/>3	2017-04-22
-<br/>5	2017-04-23
-</p>
+```   
+
+<br/>Result
+
+|id|	max_modified|
+|-----|-------|
+|1|	2017-04-23|
+|2|	2017-04-21|
+|3|	2017-04-22|
+|5|	2017-04-23|
+
 
 
 
@@ -183,7 +188,8 @@ SELECT * FROM reconcile_view;
 
 <br/>hadoop fs -rmr /user/hive/incremental_table/
 
-<br/>Move the data into the base table -- authors**********
+<br/>Move the data into the base table -- authors
+
 ```sql
 DROP table authors;
 CREATE TABLE authors 
